@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, XCircle } from 'lucide-react';
 
 interface PaymentDetails {
@@ -40,7 +41,7 @@ function App() {
       const syncSubscription = async () => {
         setSyncStatus('syncing');
         try {
-          await fetch(`https://tired-files-lie.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
+          await axios.post(`https://tired-files-lie.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
           setSyncStatus('success');
         } catch (error) {
           console.error('Failed to sync subscription:', error);
