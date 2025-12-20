@@ -10,6 +10,7 @@ interface PaymentDetails {
   recurring_charges: string | null;
   transaction_id: string | null;
   payment_id: string | null;
+  invoice_number: string | null;
 }
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
       recurring_charges: urlParams.get('recurring_charges'),
       transaction_id: urlParams.get('transaction_id'),
       payment_id: urlParams.get('paymentnumber'),
+      invoice_number: urlParams.get('invoice_number'),
     };
 
     setDetails(paymentDetails);
@@ -41,7 +43,7 @@ function App() {
       const syncSubscription = async () => {
         setSyncStatus('syncing');
         try {
-          await axios.post(`https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-test/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
+          await axios.post(`https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-test/api/hostedpage/sync-subscription`, paymentDetails);
           setSyncStatus('success');
         } catch (error) {
           console.error('Failed to sync subscription:', error);
