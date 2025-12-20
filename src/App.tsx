@@ -1,174 +1,154 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Smartphone, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, AlertCircle } from 'lucide-react';
+
+interface PaymentDetails {
+  subscription_id: string | null;
+  plan_name: string | null;
+  invoice_amount: string | null;
+  email: string | null;
+  recurring_charges: string | null;
+  transaction_id: string | null;
+}
 
 function App() {
-  const [status, setStatus] = useState<'redirecting' | 'success' | 'fallback'>('redirecting');
-  const [countdown, setCountdown] = useState(3);
+  const [details, setDetails] = useState<PaymentDetails | null>(null);
+  const [isValid, setIsValid] = useState(false);
 
   useEffect(() => {
-    // Extract any URL parameters that might need to be passed to the mobile app
+    // Extract URL parameters
     const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
-    
-    // Construct the mobile app URL with parameters
-    let mobileAppUrl = 'vealthx://app/callback';
-    const params = new URLSearchParams();
-    
-    if (authCode) params.append('code', authCode);
-    if (state) params.append('state', state);
-    if (error) params.append('error', error);
-    
-    if (params.toString()) {
-      mobileAppUrl += '?' + params.toString();
-    }
 
-    const redirectTimer = setTimeout(() => {
-      // Attempt to redirect to mobile app
-      window.location.href = mobileAppUrl;
-      setStatus('success');
-      
-      // Set up fallback timer
-      const fallbackTimer = setTimeout(() => {
-        setStatus('fallback');
-      }, 2000);
-
-      return () => clearTimeout(fallbackTimer);
-    }, 2000);
-
-    // Countdown timer
-    const countdownInterval = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdownInterval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      clearTimeout(redirectTimer);
-      clearInterval(countdownInterval);
+    const paymentDetails: PaymentDetails = {
+      subscription_id: urlParams.get('subscription_id'),
+      plan_name: urlParams.get('plan_name'),
+      invoice_amount: urlParams.get('invoice_amount'),
+      email: urlParams.get('email'),
+      recurring_charges: urlParams.get('recurring_charges'),
+      transaction_id: urlParams.get('transaction_id'),
     };
+
+    setDetails(paymentDetails);
+
+    // Consider valid if we at least have a transaction_id or subscription_id
+    if (paymentDetails.transaction_id || paymentDetails.subscription_id) {
+      setIsValid(true);
+    }
   }, []);
 
-  const handleManualRedirect = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const authCode = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
-    
-    let mobileAppUrl = 'vealthx://vealthx/callback/';
+  const handleContinue = () => {
+    if (!details) return;
+
     const params = new URLSearchParams();
-    
-    if (authCode) params.append('code', authCode);
-    if (state) params.append('state', state);
-    if (error) params.append('error', error);
-    
-    if (params.toString()) {
-      mobileAppUrl += '?' + params.toString();
-    }
-    
-    window.open(mobileAppUrl, '_blank');
+    Object.entries(details).forEach(([key, value]) => {
+      if (value) params.append(key, value);
+    });
+
+    const mobileAppUrl = `vealthx://payment/callback?${params.toString()}`;
+    window.location.href = mobileAppUrl;
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        {/* Main Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8 text-center relative overflow-hidden">
-          {/* Background Pattern */}
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5"></div>
-          
-          {/* Content */}
-          <div className="relative z-10">
-            {/* Logo/Icon */}
-            <div className="mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center mx-auto shadow-lg">
-                <Smartphone className="w-8 h-8 text-white" />
-              </div>
-            </div>
+  if (!isValid && details) {
+    // Optional: Show error or loading state if parameters are missing
+    // For now, if no transaction_id, we might still want to show what we have or an error.
+    // Let's assume if transaction_id is missing, it's not a success case or just wait.
+    // However, to be robust, let's render based on what we have.
+  }
 
-            {/* Status Content */}
-            {status === 'redirecting' && (
-              <>
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                  Authentication Successful
-                </h1>
-                <p className="text-gray-600 mb-6">
-                  Redirecting to VealthX app in {countdown} seconds...
-                </p>
-                
-                {/* Loading Animation */}
-                <div className="flex justify-center mb-6">
-                  <div className="flex space-x-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
-                    <div className="w-3 h-3 bg-blue-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+  return (
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
+          {/* Header */}
+          <div className="bg-green-600 p-6 text-center">
+            <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
+              <CheckCircle className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2">Payment Successful</h1>
+            <p className="text-green-100">Thank you for your subscription</p>
+          </div>
+
+          {/* Content */}
+          <div className="p-6">
+            {details && (
+              <div className="space-y-4">
+                {/* Amount Card */}
+                <div className="bg-gray-50 rounded-2xl p-4 flex items-center justify-between border border-gray-100">
+                  <div className="flex items-center space-x-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Receipt className="w-5 h-5 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-medium">Amount Paid</p>
+                      <p className="text-lg font-bold text-gray-900">{details.invoice_amount || '0.00'}</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                    style={{ width: `${((3 - countdown) / 3) * 100}%` }}
-                  ></div>
+                {/* Details List */}
+                <div className="space-y-3 pt-2">
+                  {details.plan_name && (
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <CreditCard className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">Plan Name</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{details.plan_name}</span>
+                    </div>
+                  )}
+
+                  {details.transaction_id && (
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <FileText className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">Transaction ID</span>
+                      </div>
+                      <span className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{details.transaction_id}</span>
+                    </div>
+                  )}
+
+                  {details.recurring_charges && (
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Calendar className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">Recurring</span>
+                      </div>
+                      <span className="text-sm font-semibold text-gray-900">{details.recurring_charges}</span>
+                    </div>
+                  )}
+
+                  {details.email && (
+                    <div className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                      <div className="flex items-center space-x-3">
+                        <Mail className="w-5 h-5 text-gray-400" />
+                        <span className="text-sm text-gray-600">Email</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900 truncate max-w-[150px]" title={details.email}>{details.email}</span>
+                    </div>
+                  )}
                 </div>
-              </>
+              </div>
             )}
 
-            {status === 'success' && (
-              <>
-                <div className="mb-4">
-                  <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                  Opening VealthX App
-                </h1>
-                <p className="text-gray-600">
-                  Please wait while we open your mobile app...
-                </p>
-              </>
+            {!isValid && (
+              <div className="text-center py-8">
+                <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-3" />
+                <p className="text-gray-500">Waiting for payment details...</p>
+              </div>
             )}
 
-            {status === 'fallback' && (
-              <>
-                <div className="mb-4">
-                  <AlertCircle className="w-12 h-12 text-amber-500 mx-auto" />
-                </div>
-                <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                  Manual Redirect Required
-                </h1>
-                <p className="text-gray-600 mb-6">
-                  If the app didn't open automatically, please tap the button below:
-                </p>
-                
-                <button
-                  onClick={handleManualRedirect}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-semibold py-3 px-6 rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center space-x-2"
-                >
-                  <span>Open VealthX App</span>
-                  <ArrowRight className="w-5 h-5" />
-                </button>
-
-                <div className="mt-6 p-4 bg-gray-50 rounded-xl">
-                  <p className="text-sm text-gray-500">
-                    Make sure you have the VealthX app installed on your device.
-                  </p>
-                </div>
-              </>
-            )}
+            <div className="mt-8">
+              <button
+                onClick={handleContinue}
+                className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group"
+              >
+                <span>Continue to App</span>
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              <p className="text-center text-xs text-gray-400 mt-4">
+                Click above to return to the VealthX app
+              </p>
+            </div>
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="text-center mt-6">
-          <p className="text-sm text-gray-500">
-            Powered by VealthX • Secure OAuth Flow
-          </p>
         </div>
       </div>
     </div>
