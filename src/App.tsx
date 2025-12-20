@@ -30,7 +30,7 @@ function App() {
       recurring_charges: urlParams.get('recurring_charges'),
       transaction_id: urlParams.get('transaction_id'),
       payment_id: urlParams.get('paymentnumber'),
-      invoice_number: urlParams.get('invoice_number'),
+      invoice_number: urlParams.get('invoicenumber'),
     };
 
     setDetails(paymentDetails);
