@@ -40,12 +40,11 @@ function App() {
       const syncSubscription = async () => {
         setSyncStatus('syncing');
         try {
-          await fetch(`https://upset-paths-wash.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
+          await fetch(`https://tired-files-lie.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
           setSyncStatus('success');
         } catch (error) {
           console.error('Failed to sync subscription:', error);
           setSyncStatus('error');
-          // We don't block the UI on sync failure, just log it for now as per instructions
         }
       };
 
