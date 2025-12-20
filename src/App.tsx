@@ -135,7 +135,7 @@ function App() {
                             <FileText className="w-5 h-5 text-gray-400" />
                             <span className="text-sm text-gray-600">Transaction ID</span>
                           </div>
-                          <span className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{details.transaction_id}</span>
+                          <span className="text-sm font-mono text-gray-900 bg-gray-100 px-2 py-1 rounded">{details.payment_id}</span>
                         </div>
                       )}
 
