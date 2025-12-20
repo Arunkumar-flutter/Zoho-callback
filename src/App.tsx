@@ -13,7 +13,7 @@ function App() {
     const error = urlParams.get('error');
     
     // Construct the mobile app URL with parameters
-    let mobileAppUrl = 'vealthx://app/callback';
+    let mobileAppUrl = 'vealthx://callback';
     const params = new URLSearchParams();
     
     if (authCode) params.append('code', authCode);
