@@ -6,7 +6,7 @@ function App() {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-    // Extract any URL parameters that might need to be passed to the mobile app
+  
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const state = urlParams.get('state');
