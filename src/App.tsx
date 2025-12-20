@@ -10,6 +10,7 @@ interface PaymentDetails {
   recurring_charges: string | null;
   transaction_id: string | null;
   payment_id: string | null;
+  invoice_number: string | null;
 }
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
       recurring_charges: urlParams.get('recurring_charges'),
       transaction_id: urlParams.get('transaction_id'),
       payment_id: urlParams.get('paymentnumber'),
+      invoice_number: urlParams.get('invoicenumber'),
     };
 
     setDetails(paymentDetails);
@@ -125,7 +127,7 @@ function App() {
                             <CreditCard className="w-5 h-5 text-gray-400" />
                             <span className="text-sm text-gray-600">Plan Name</span>
                           </div>
-                          <span className="text-sm font-semibold text-gray-900">{details.plan_name}</span>
+                          <span className="text-sm font-semibold text-gray-900">{details.invoice_number}</span>
                         </div>
                       )}
 
