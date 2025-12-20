@@ -41,7 +41,7 @@ function App() {
       const syncSubscription = async () => {
         setSyncStatus('syncing');
         try {
-          await axios.post(`https://tired-files-lie.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
+          await axios.post(`https://young-kids-push.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
           setSyncStatus('success');
         } catch (error) {
           console.error('Failed to sync subscription:', error);
