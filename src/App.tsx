@@ -43,15 +43,12 @@ function App() {
       if (value) params.append(key, value);
     });
 
-    const mobileAppUrl = `vealthx://payment/callback?${params.toString()}`;
+    const mobileAppUrl = `vealthx://app/callback?${params.toString()}`;
     window.location.href = mobileAppUrl;
   };
 
   if (!isValid && details) {
-    // Optional: Show error or loading state if parameters are missing
-    // For now, if no transaction_id, we might still want to show what we have or an error.
-    // Let's assume if transaction_id is missing, it's not a success case or just wait.
-    // However, to be robust, let's render based on what we have.
+  
   }
 
   return (
