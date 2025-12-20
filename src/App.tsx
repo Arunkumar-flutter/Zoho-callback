@@ -6,14 +6,14 @@ function App() {
   const [countdown, setCountdown] = useState(3);
 
   useEffect(() => {
-
+    // Extract any URL parameters that might need to be passed to the mobile app
     const urlParams = new URLSearchParams(window.location.search);
     const authCode = urlParams.get('code');
     const state = urlParams.get('state');
     const error = urlParams.get('error');
     
     // Construct the mobile app URL with parameters
-    let mobileAppUrl = 'vealthx://callback';
+    let mobileAppUrl = 'vealthx://app/callback';
     const params = new URLSearchParams();
     
     if (authCode) params.append('code', authCode);
