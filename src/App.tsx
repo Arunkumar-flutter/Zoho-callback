@@ -41,7 +41,7 @@ function App() {
       const syncSubscription = async () => {
         setSyncStatus('syncing');
         try {
-          await axios.post(`https://young-kids-push.loca.lt/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
+          await axios.post(`https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-test/api/hostedpage/sync-subscription/${paymentDetails.subscription_id}`);
           setSyncStatus('success');
         } catch (error) {
           console.error('Failed to sync subscription:', error);
