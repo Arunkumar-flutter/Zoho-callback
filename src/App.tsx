@@ -71,7 +71,7 @@ function App() {
       mobileAppUrl += '?' + params.toString();
     }
     
-    window.location.href = mobileAppUrl;
+    window.open(mobileAppUrl, '_blank');
   };
 
   return (
