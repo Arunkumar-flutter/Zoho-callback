@@ -11,6 +11,7 @@ interface PaymentDetails {
   transaction_id: string | null;
   payment_id: string | null;
   invoice_number: string | null;
+  zoho:boolean | null;
 }
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
       transaction_id: urlParams.get('transaction_id'),
       payment_id: urlParams.get('paymentnumber'),
       invoice_number: urlParams.get('invoicenumber'),
+      zoho: true,
     };
 
     setDetails(paymentDetails);
