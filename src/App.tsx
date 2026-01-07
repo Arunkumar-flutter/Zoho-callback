@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
-import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, XCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, XCircle, RotateCcw } from 'lucide-react';
 
 interface PaymentDetails {
   subscription_id: string | null;
@@ -11,13 +11,30 @@ interface PaymentDetails {
   transaction_id: string | null;
   payment_id: string | null;
   invoice_number: string | null;
-  zoho:boolean | null;
 }
 
 function App() {
   const [details, setDetails] = useState<PaymentDetails | null>(null);
-  const [isValid, setIsValid] = useState<boolean | null>(null); // null = loading/checking
+  const [isValid, setIsValid] = useState<boolean | null>(null); // null = checking params
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
+
+  const syncSubscription = useCallback(async (paymentDetails: PaymentDetails) => {
+    setSyncStatus('syncing');
+    try {
+
+      const response = await axios.post(`https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-prod/api/hostedpage/sync-subscription`, paymentDetails);
+
+      if (response.data && response.data.success) {
+        setSyncStatus('success');
+      } else {
+        console.error('Subscription sync failed:', response.data);
+        setSyncStatus('error');
+      }
+    } catch (error) {
+      console.error('Failed to sync subscription:', error);
+      setSyncStatus('error');
+    }
+  }, []);
 
   useEffect(() => {
     // Extract URL parameters
@@ -32,12 +49,10 @@ function App() {
       transaction_id: urlParams.get('transaction_id'),
       payment_id: urlParams.get('paymentnumber'),
       invoice_number: urlParams.get('invoicenumber'),
-      zoho: true,
     };
 
     setDetails(paymentDetails);
 
-    // Logic: Valid only if subscription_id is present
     if (paymentDetails.subscription_id) {
       setIsValid(true);
 
@@ -57,7 +72,7 @@ function App() {
     } else {
       setIsValid(false);
     }
-  }, []);
+  }, [syncSubscription]);
 
   const handleContinue = () => {
     if (!details) return;
@@ -76,6 +91,13 @@ function App() {
     window.location.href = mobileAppUrl;
   };
 
+  const handleRetry = () => {
+    if (details) {
+      syncSubscription(details);
+    }
+  };
+
+  // 1. Initial Loading (checking params)
   if (isValid === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -87,13 +109,25 @@ function App() {
     );
   }
 
+  // 2. Syncing Loading State (API call in progress)
+  if (isValid && syncStatus === 'syncing') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="flex flex-col items-center">
+          <div className="w-12 h-12 border-4 border-gray-200 border-t-green-600 rounded-full animate-spin mb-4"></div>
+          <p className="text-gray-600 font-medium">Verifying subscription...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
 
           {/* Success State */}
-          {isValid ? (
+          {isValid && syncStatus === 'success' ? (
             <>
               {/* Header */}
               <div className="bg-green-600 p-6 text-center">
@@ -181,30 +215,49 @@ function App() {
               </div>
             </>
           ) : (
+            // Failure / Error State
             <>
               {/* Failure Header */}
               <div className="bg-red-600 p-6 text-center">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <XCircle className="w-8 h-8 text-white" />
                 </div>
-                <h1 className="text-2xl font-bold text-white mb-2">Subscription Failed</h1>
-                <p className="text-red-100">We could not process your subscription</p>
+                <h1 className="text-2xl font-bold text-white mb-2">Subscription Sync Failed</h1>
+                <p className="text-red-100">
+                  {isValid ? "We couldn't verify your subscription." : "Invalid subscription details."}
+                </p>
               </div>
 
               {/* Failure Content */}
               <div className="p-6">
                 <div className="text-center py-4">
                   <p className="text-gray-600 mb-6">
-                    Something went wrong while verifying your subscription. Please try selecting a plan again.
+                    {isValid
+                      ? "There was a problem syncing your subscription status. Please try again."
+                      : "Something went wrong while identifying your subscription. Please try selecting a plan again."}
                   </p>
 
-                  <button
-                    onClick={handleChoosePlan}
-                    className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group"
-                  >
-                    <span>Choose Plan</span>
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </button>
+                  <div className="space-y-3">
+                    {/* Retry Button - Only if Valid Params but API failed */}
+                    {isValid && (
+                      <button
+                        onClick={handleRetry}
+                        className="w-full bg-gray-900 hover:bg-black text-white font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group"
+                      >
+                        <RotateCcw className="w-5 h-5 group-hover:-rotate-180 transition-transform duration-500" />
+                        <span>Retry Sync</span>
+                      </button>
+                    )}
+
+                    <button
+                      onClick={handleChoosePlan}
+                      className={`w-full ${isValid ? 'bg-white text-gray-700 border-2 border-gray-100 hover:bg-gray-50' : 'bg-red-600 hover:bg-red-700 text-white'} font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group`}
+                    >
+                      <span>Choose Plan</span>
+                      <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </button>
+                  </div>
+
                   <p className="text-center text-xs text-gray-400 mt-4">
                     Return to app to retry
                   </p>
