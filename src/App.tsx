@@ -95,7 +95,7 @@ function App() {
       if (value) params.append(key, value);
     });
 
-    const WEB_FALLBACK_URL = 'https://zealous-glacier-0ff3bca00.4.azurestaticapps.net/app/callback?';
+    const WEB_FALLBACK_URL = 'https://app.vealthx.com/app/callback?';
 
     if (isAndroid) {
       window.location.href = `vealthx://app/callback?${params.toString()}`;
@@ -113,7 +113,7 @@ function App() {
     window.location.href = mobileAppUrl;
     setTimeout(() => {
 
-      window.location.href = `https://zealous-glacier-0ff3bca00.4.azurestaticapps.net/app/callback`;
+      window.location.href = `https://app.vealthx.com/app/callback`;
     }, 500);
   };
 
