@@ -3,7 +3,18 @@ import axios from 'axios';
 import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, XCircle, RotateCcw } from 'lucide-react';
 import { isAndroid, isIOS } from "react-device-detect";
 
+// ─── Partner Origin Allowlist ───────────────────────────────────────────────
+// Add new partner origin here when onboarding — no other changes needed
+const ALLOWED_ORIGINS: string[] = [
+  'https://app.vealthx.com',
+  'https://vealthx.hermoneytalks.com',
+  // 'https://vealthx.ssm.com',       ← uncomment when SSM onboards
+  // 'https://vealthx.partner3.com',  ← uncomment when partner3 onboards
+];
 
+const DEFAULT_ORIGIN = 'https://app.vealthx.com';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 interface PaymentDetails {
   hostedpage_id: string | null;
   subscription_id: string | null;
@@ -16,21 +27,45 @@ interface PaymentDetails {
   invoice_number: string | null;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/**
+ * Reads the `origin` param from the URL and validates it against the allowlist.
+ * Falls back to DEFAULT_ORIGIN if missing or unknown.
+ *
+ * This origin is embedded by the partner backend when creating the Zoho
+ * hosted page return_url, so it round-trips through Zoho untouched.
+ */
+function resolveOrigin(urlParams: URLSearchParams): string {
+  const raw = urlParams.get('origin');
+  if (!raw) return DEFAULT_ORIGIN;
+
+  try {
+    // Normalise — remove trailing slash so comparison is reliable
+    const decoded = decodeURIComponent(raw).replace(/\/$/, '');
+    return ALLOWED_ORIGINS.includes(decoded) ? decoded : DEFAULT_ORIGIN;
+  } catch {
+    return DEFAULT_ORIGIN;
+  }
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 function App() {
   const [details, setDetails] = useState<PaymentDetails | null>(null);
-  const [isValid, setIsValid] = useState<boolean | null>(null); // null = checking params
+  const [origin, setOrigin] = useState<string>(DEFAULT_ORIGIN);
+  const [isValid, setIsValid] = useState<boolean | null>(null); // null = still reading params
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
+  // ── Sync subscription with Vealthx backend ──────────────────────────────
   const syncSubscription = useCallback(async (paymentDetails: PaymentDetails) => {
     setSyncStatus('syncing');
     try {
-    
       const response = await axios.post(
         `https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-prod/api/hostedpage/payment-complete`,
         { hostedpage_id: paymentDetails.hostedpage_id }
       );
 
-      if (response.data && response.data.success) {
+      if (response.data?.success) {
         setSyncStatus('success');
       } else {
         console.error('Subscription sync failed:', response.data);
@@ -42,9 +77,13 @@ function App() {
     }
   }, []);
 
+  // ── Boot — read URL params ──────────────────────────────────────────────
   useEffect(() => {
-    // Extract URL parameters
     const urlParams = new URLSearchParams(window.location.search);
+
+    // Resolve which partner this callback came from
+    const resolvedOrigin = resolveOrigin(urlParams);
+    setOrigin(resolvedOrigin);
 
     const paymentDetails: PaymentDetails = {
       hostedpage_id: urlParams.get('hostedpage_id'),
@@ -58,35 +97,17 @@ function App() {
       invoice_number: urlParams.get('invoicenumber'),
     };
 
-
     setDetails(paymentDetails);
 
     if (paymentDetails.hostedpage_id) {
       setIsValid(true);
-
-      // Call Sync API
-      const syncSubscription = async () => {
-        setSyncStatus('syncing');
-        try {
-          // Send only hostedpage_id to the API
-        const response = await axios.post(
-        `https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-prod/api/hostedpage/payment-complete`,
-       { hostedpage_id: paymentDetails.hostedpage_id }
-      );
-
-          setSyncStatus('success');
-        } catch (error) {
-          console.error('Failed to sync subscription:', error);
-          setSyncStatus('error');
-        }
-      };
-
-      syncSubscription();
+      syncSubscription(paymentDetails);
     } else {
       setIsValid(false);
     }
   }, [syncSubscription]);
 
+  // ── After successful sync — send user back to the right partner domain ──
   const handleContinue = () => {
     if (!details) return;
 
@@ -95,35 +116,36 @@ function App() {
       if (value) params.append(key, value);
     });
 
-    const WEB_FALLBACK_URL = 'https://app.vealthx.com/app/callback?';
+    // Dynamic — routes back to whichever partner initiated the payment
+    // native  → https://app.vealthx.com/app/callback?...
+    // partner → https://vealthx.hermoneytalks.com/app/callback?...
+    const webFallbackUrl = `${origin}/app/callback?${params.toString()}`;
 
-    if (isAndroid) {
-      window.location.href = `vealthx://app/callback?${params.toString()}`;
-    } else if (isIOS) {
+    if (isAndroid || isIOS) {
       window.location.href = `vealthx://app/callback?${params.toString()}`;
     } else {
-      window.location.href = `${WEB_FALLBACK_URL}` + params.toString();
+      window.location.href = webFallbackUrl;
     }
-
   };
 
-
+  // ── On failure — send user back to choose a plan on the right domain ────
   const handleChoosePlan = () => {
-    const mobileAppUrl = `vealthx://app/callback`;
-    window.location.href = mobileAppUrl;
-    setTimeout(() => {
-
-      window.location.href = `https://app.vealthx.com/app/callback`;
-    }, 500);
-  };
-
-  const handleRetry = () => {
-    if (details) {
-      syncSubscription(details);
+    if (isAndroid || isIOS) {
+      window.location.href = `vealthx://app/callback`;
+      setTimeout(() => {
+        window.location.href = `${origin}/app/callback`;
+      }, 500);
+    } else {
+      window.location.href = `${origin}/app/callback`;
     }
   };
 
+  // ── Retry sync ──────────────────────────────────────────────────────────
+  const handleRetry = () => {
+    if (details) syncSubscription(details);
+  };
 
+  // ── Loading — params not yet read ───────────────────────────────────────
   if (isValid === null) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -135,7 +157,7 @@ function App() {
     );
   }
 
-  // 2. Syncing Loading State (API call in progress)
+  // ── Loading — sync API in progress ──────────────────────────────────────
   if (isValid && syncStatus === 'syncing') {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -147,15 +169,15 @@ function App() {
     );
   }
 
+  // ── Main render ─────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full">
         <div className="bg-white rounded-3xl shadow-xl overflow-hidden">
 
-          {/* Success State */}
+          {/* ── Success State ─────────────────────────────────────────────── */}
           {isValid && syncStatus === 'success' ? (
             <>
-              {/* Header */}
               <div className="bg-green-600 p-6 text-center">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <CheckCircle className="w-8 h-8 text-white" />
@@ -164,7 +186,6 @@ function App() {
                 <p className="text-green-100">Thank you for your subscription</p>
               </div>
 
-              {/* Content */}
               <div className="p-6">
                 {details && (
                   <div className="space-y-4">
@@ -240,10 +261,10 @@ function App() {
                 </div>
               </div>
             </>
+
           ) : (
-            // Failure / Error State
+            /* ── Failure / Error State ──────────────────────────────────── */
             <>
-              {/* Failure Header */}
               <div className="bg-red-600 p-6 text-center">
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
                   <XCircle className="w-8 h-8 text-white" />
@@ -254,7 +275,6 @@ function App() {
                 </p>
               </div>
 
-              {/* Failure Content */}
               <div className="p-6">
                 <div className="text-center py-4">
                   <p className="text-gray-600 mb-6">
@@ -264,7 +284,6 @@ function App() {
                   </p>
 
                   <div className="space-y-3">
-                    {/* Retry Button - Only if Valid Params but API failed */}
                     {isValid && (
                       <button
                         onClick={handleRetry}
@@ -277,7 +296,10 @@ function App() {
 
                     <button
                       onClick={handleChoosePlan}
-                      className={`w-full ${isValid ? 'bg-white text-gray-700 border-2 border-gray-100 hover:bg-gray-50' : 'bg-red-600 hover:bg-red-700 text-white'} font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group`}
+                      className={`w-full ${isValid
+                        ? 'bg-white text-gray-700 border-2 border-gray-100 hover:bg-gray-50'
+                        : 'bg-red-600 hover:bg-red-700 text-white'
+                        } font-semibold py-4 px-6 rounded-xl shadow-lg transform active:scale-95 transition-all duration-200 flex items-center justify-center space-x-2 group`}
                     >
                       <span>Choose Plan</span>
                       <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
