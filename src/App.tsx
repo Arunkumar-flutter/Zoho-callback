@@ -61,7 +61,7 @@ function App() {
     setSyncStatus('syncing');
     try {
       const response = await axios.post(
-        `https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-prod/api/hostedpage/payment-complete`,
+        `https://vealthx-ollamavm2.centralindia.cloudapp.azure.com/zoho-subscription-prod/api/v2/hostedpage/payment-complete`,
         { hostedpage_id: paymentDetails.hostedpage_id }
       );
 
