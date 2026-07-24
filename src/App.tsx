@@ -3,15 +3,6 @@ import axios from 'axios';
 import { ArrowRight, CheckCircle, Receipt, CreditCard, Calendar, Mail, FileText, XCircle, RotateCcw } from 'lucide-react';
 import { isAndroid, isIOS } from "react-device-detect";
 
-// ─── Partner Origin Allowlist ───────────────────────────────────────────────
-// Add new partner origin here when onboarding — no other changes needed
-const ALLOWED_ORIGINS: string[] = [
-  'https://app.vealthx.com',
-  'https://vealthx.hermoneytalks.com',
-  // 'https://vealthx.ssm.com',       ← uncomment when SSM onboards
-  // 'https://vealthx.partner3.com',  ← uncomment when partner3 onboards
-];
-
 const DEFAULT_ORIGIN = 'https://app.vealthx.com';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -41,9 +32,13 @@ function resolveOrigin(urlParams: URLSearchParams): string {
   if (!raw) return DEFAULT_ORIGIN;
 
   try {
-    // Normalise — remove trailing slash so comparison is reliable
-    const decoded = decodeURIComponent(raw).replace(/\/$/, '');
-    return ALLOWED_ORIGINS.includes(decoded) ? decoded : DEFAULT_ORIGIN;
+    // URLSearchParams already decodes the value, but we remove trailing slash for normalization
+    const origin = raw.replace(/\/$/, '');
+    
+    // Dynamic Validation: Allow main app OR partner domains (e.g. https://vealthx.partner.com)
+    const isTrusted = origin === 'https://app.vealthx.com' || origin.startsWith('https://vealthx.');
+    
+    return isTrusted ? origin : DEFAULT_ORIGIN;
   } catch {
     return DEFAULT_ORIGIN;
   }
