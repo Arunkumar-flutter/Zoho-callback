@@ -112,9 +112,9 @@ function App() {
     });
 
     // Dynamic — routes back to whichever partner initiated the payment
-    // native  → https://app.vealthx.com/app/callback?...
-    // partner → https://vealthx.hermoneytalks.com/app/callback?...
-    const webFallbackUrl = `${origin}/app/callback?${params.toString()}`;
+    // native  → https://app.vealthx.com/home?...
+    // partner → https://vealthx.hermoneytalks.com/home?...
+    const webFallbackUrl = `${origin}/home?${params.toString()}`;
 
     if (isAndroid || isIOS) {
       window.location.href = `vealthx://app/callback?${params.toString()}`;
@@ -128,10 +128,10 @@ function App() {
     if (isAndroid || isIOS) {
       window.location.href = `vealthx://app/callback`;
       setTimeout(() => {
-        window.location.href = `${origin}/app/callback`;
+        window.location.href = `${origin}/home`;
       }, 500);
     } else {
-      window.location.href = `${origin}/app/callback`;
+      window.location.href = `${origin}/home`;
     }
   };
 
