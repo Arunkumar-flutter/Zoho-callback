@@ -35,8 +35,8 @@ function resolveOrigin(urlParams: URLSearchParams): string {
     // URLSearchParams already decodes the value, but we remove trailing slash for normalization
     const origin = raw.replace(/\/$/, '');
     
-    // Dynamic Validation: Allow main app OR partner domains (e.g. https://vealthx.partner.com)
-    const isTrusted = origin === 'https://app.vealthx.com' || origin.startsWith('https://vealthx.');
+    // Dynamic Validation: Allow main app OR partner domains
+    const isTrusted = origin === 'https://app.vealthx.com' || origin.includes('vealthx');
     
     return isTrusted ? origin : DEFAULT_ORIGIN;
   } catch {
