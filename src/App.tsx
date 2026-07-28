@@ -62,13 +62,13 @@ function App() {
 
       if (response.data?.success) {
         setSyncStatus('success');
-        // Update details with data from backend if available
+        // Update details with data from backend ONLY if they are missing in the URL params
         if (response.data.data) {
           setDetails((prev) => ({
             ...prev!,
-            invoice_amount: response.data.data.amount?.toString() || prev?.invoice_amount || null,
-            plan_name: response.data.data.plan_code || prev?.plan_name || null,
-            subscription_id: response.data.data.subscription_id || prev?.subscription_id || null,
+            invoice_amount: prev?.invoice_amount || response.data.data.amount?.toString() || null,
+            plan_name: prev?.plan_name || response.data.data.plan_code || null,
+            subscription_id: prev?.subscription_id || response.data.data.subscription_id || null,
           }));
         }
       } else {
