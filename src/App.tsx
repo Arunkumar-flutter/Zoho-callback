@@ -62,6 +62,15 @@ function App() {
 
       if (response.data?.success) {
         setSyncStatus('success');
+        // Update details with data from backend if available
+        if (response.data.data) {
+          setDetails((prev) => ({
+            ...prev!,
+            invoice_amount: response.data.data.amount?.toString() || prev?.invoice_amount || null,
+            plan_name: response.data.data.plan_code || prev?.plan_name || null,
+            subscription_id: response.data.data.subscription_id || prev?.subscription_id || null,
+          }));
+        }
       } else {
         console.error('Subscription sync failed:', response.data);
         setSyncStatus('error');
